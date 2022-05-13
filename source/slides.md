@@ -24,6 +24,125 @@ notes:
 - CNCF sandbox
 
 ---
+### Client Runthrough
+
+Rust Kubernetes Client
+
+notes:
+- first of all we are a client library
+- you can do all api operations on k8s resources
+
+---
+
+### Client Runthrough 1
+
+```rust
+let nodes: Api<Node> = Api::all(client);
+let n = nodes.get("k3d-main-server-0").await?;
+
+for node in nodes.list(&ListParams::default()).await? {
+    println!("Found node {}", node.name());
+}
+```
+
+notes:
+- you can get and list things
+
+---
+### Client Runthrough 2
+
+```rust
+let pods: Api<Pod> = Api::default_namespaced(client);
+let p = pods.get("blog").await?;
+
+for pod in pods.list(&ListParams::default()).await? {
+    println!("Found pod {}", pod.name());
+}
+```
+
+notes:
+- api is generic, same interface for all pods
+- can do all the things, delete, delete_collection, create, patch
+
+---
+### Client Runthrough 3
+
+```rust
+let pods: Api<Pod> = Api::default_namespaced(client);
+let p: Pod = serde_json::from_value(json!({
+    "apiVersion": "v1",
+    "kind": "Pod",
+    "metadata": { "name": "blog" },
+    "spec": {
+        "containers": [{
+            "name": "blog",
+            "image": "clux/blog:0.1.0"
+        }],
+    }
+}))?;
+pods.patch("blog", &serverside, &Patch::Apply(p)).await?
+```
+
+notes:
+- you can apply, either from structs, or you can force serialize into structs
+
+
+---
+### Client Runthrough 4
+
+```rust
+let pods: Api<Pod> = Api::default_namespaced(client);
+let status = pods.get_status("blog").await?
+```
+
+notes:
+- standard subresource operations
+- Status + Scale are the two main generic subresources
+- can patch/replace these
+
+---
+### Client Runthrough 5
+
+```rust
+let pods: Api<Pod> = Api::default_namespaced(client);
+
+let cmd = vec!["sh", "-c", "for i in $(seq 1 3); do date; done"]
+let params = AttachParams::default().stderr(false);
+let attached = pods.exec("blog", cmd, &params).await?;
+```
+
+notes:
+- we also implement all the special subresources for special case resources
+- you can exec into pods, and you get a set of io streams back that you can tail or pipe into another stream
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+---
 ### Why Not Rust
 
 - Kubernetes + client-go comes first <!-- .element: class="fragment" -->
