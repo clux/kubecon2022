@@ -22,6 +22,7 @@ notes:
 - tons of people have helped make kube support almost as wide as the go land
 - managed in a single repo that's versioned together
 - CNCF sandbox
+- purpose of this talk is to give a quick ecosystem tour
 
 ---
 ### Why Rust?
@@ -228,6 +229,77 @@ notes:
 - but we don't have protobuf support yet, we have a WIP for it
 
 
+---
+### Code Generation
+
+- CustomResource
+- kopium
+- schemars
+- k8s-openapi
+- k8s-pb
+
+
+notes:
+- multiple parts - minimize the amount of boilerplate code you have to write
+- lots of efforts around - not just from us
+- schemars and k8s-openapi are maintained by other people
+
+---
+### Codegen; k8s-openapi
+
+not ours
+
+---
+### Codegen; k8s-pb
+
+our wip protobuf rewrite
+
+notes:
+- structs only exists if we have schemas for them
+- core kubernetes schemas are released by kubernetes
+- we parse them and generate rust centered structs for them
+
+---
+### Codegen; CustomResource derive
+
+```rust
+[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
+#[kube(kind = "Document", group = "kube.rs", version = "v1", namespaced)]
+#[kube(status = "DocumentStatus", shortname = "doc")]
+pub struct DocumentSpec {
+    title: String,
+    hide: bool,
+    content: String,
+}
+```
+
+notes:
+- creates a Document type; that behaves as a k8s-openapi type
+- we can generate crds... wtf how?
+
+---
+### Codegen; Schemars
+
+recursive impl to get schemas
+
+notes:
+- very good
+
+---
+### Codegen; kopium
+
+taking openapi schemas and generating rust structs
+
+notes:
+- taking openapi schemas and generating rust structs
+- if you have a go controller, take its schema
+- run it through kopium and you got half of a rust controller
+- at least that's the goal
+
+
+
+
+
 
 ---
 ### Runtime
@@ -245,7 +317,7 @@ notes:
 - controllers, glue it all together so you can build a reconciler around an owned object
 
 ---
-### Runtime Runthrough 1
+### Runtime; watcher
 
 ```rust
 let nodes: Api<Node> = Api::all(client);
@@ -262,7 +334,7 @@ notes:
 - works for every object because it takes an Api
 
 ---
-### Runtime Runthrough 2
+### Runtime; reflector
 
 ```rust
 let nodes: Api<Node> = Api::all(client);
@@ -278,18 +350,130 @@ notes:
 - can pass the reader handle to a web server or whatever, it's clonable
 - and provides a way to query the cluster without making extra api calls
 
-
 ---
-### Runtime Runthrough 3
-
-- event recorder
-- conditions
-- controller
-- finalizer
+### Runtime; recorder
 
 ```rust
-
+let recorder = Recorder::new(client, reporter, objref);
+recorder.publish(Event {
+    type_: EventType::Normal,
+    reason: "HiddenDoc".into(),
+    note​s: Some(format!("Hiding `{}`", name)),
+    action: "Reconciling".into(),
+    secondary: None
+}).await
 ```
+
+notes:
+- parts of the client-go special helper tools
+- eventrecorder fairly common that that's pretty clean already
+- creates events, shows up in kubectl describe
+- NB: zwsp in notes...
+
+---
+### Runtime; conditions
+
+```rust
+let crds: Api<CustomResourceDefinition> = Api::all(client);
+let name = "documents.kube.rs";
+let cond = conditions::is_crd_established();
+let time = Duration::from_secs(10);
+timeout(time, await_condition(crds, name, cond)).await?;
+```
+
+notes:
+- conditions - abstraction that watches until a certain state in the status object has been seen
+- we expose some basic conditions; is_deleted, is_crd_established, is_pod_running, but beyond that currently have small helpers
+- tricky to write generically because objects don't need to have same fields, even spec/status conventions are even maintained within kubernetes
+- can make this easier with next object generation setup (by selectively generating traits such as HasSpec and HasStatus or HasConditions)
+
+---
+### Runtime; controller
+
+```rust
+let ctx = Arc::new(Data { client });
+Controller::new(crdapi, lp)
+    .owns(configmaps, lp)
+    .run(reconcile, error_policy, ctx)
+```
+
+notes:
+- controllers. api has similar conventions to controller runtime.
+- you configure your main api, here some crd
+- configure an owned resource (here configmaps), that will trigger reconcile of owning object by traversing ownerAnnotations
+- you pass in two functions; reconcile and error_policy
+- and you then have to write a reconciler
+
+---
+### Runtime; reconcilers
+
+```rust
+#[instrument(skip(ctx, doc))]
+async fn reconcile(doc: Arc<Document>, ctx: Arc<Data>)
+    -> Result<Action, Error>
+{
+    let client = ctx.client.clone();
+    let ns = doc.namespace().unwrap();
+    let docs: Api<Document> = Api::namespaced(client, &ns);
+    // TODO: use doc spec to create/update owned resources
+    Ok(Action::requeue(Duration::from_secs(30 * 60)))
+}
+```
+
+notes:
+- reconciler ends up like this - kube invokes it when your object changes
+- or anything it owns or watches changes
+- but it figures out what's the parent and that's what you get called for
+- also get context you passed in.
+- then you get to correct the state of the world.
+- it's all very fun writing idempotent reconcilers, and i could talk for days about it
+- we have a whole section dedicated to controller writing on our website - not all done - but if you need a controller go read it
+
+
+---
+### Runtime; finalizers
+
+```rust
+finalizer(&api, "docs.kube.rs/cleanup", obj, |event| async {
+    match event {
+        Event::Apply(cm) => apply(cm, &secrets).await,
+        Event::Cleanup(cm) => cleanup(cm, &secrets).await,
+    }
+}).await
+```
+
+notes:
+- common patterns like finalizers we have helpers
+- that
+- you can split your main reconcile into two fns apply/cleanup that you create
+- and then the
+
+<!--
+---
+### Runtime End
+
+- docs.rs [reflector](https://docs.rs/kube/latest/kube/runtime/fn.reflector.html)
+- docs.rs [watcher](https://docs.rs/kube/latest/kube/runtime/fn.watcher.html)
+- docs.rs [conditions](https://docs.rs/kube/latest/kube/runtime/wait/conditions/index.html)
+-->
+
+---
+### Runtime End
+
+- [kube.rs controller guide](https://kube.rs/controllers/intro/)
+- docs.rs [Controller](https://docs.rs/kube/latest/kube/runtime/struct.Controller.html)
+- docs.rs [finalizer](https://docs.rs/kube/latest/kube/runtime/finalizer/fn.finalizer.html)
+
+---
+### Runtime Examples
+
+- [version-rs](https://github.com/kube-rs/version-rs/blob/main/version.rs)
+- [controller-rs](https://github.com/kube-rs/controller-rs)
+
+notes:
+- 100 line reflector with axum, tracing, presents a deployment api
+- best practices controller that we update with kube-rs; tracing, metrics, logs, crd generation from schema and kube-derive
+
 
 
 
@@ -299,7 +483,7 @@ notes:
 ### Lacks
 
 - apiconfigurations
-- structs not ideal yet
+- structs not ideal yet - not all generic
 - protobuf work
 
 
