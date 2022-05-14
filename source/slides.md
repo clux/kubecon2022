@@ -46,7 +46,8 @@ for node in nodes.list(&ListParams::default()).await? {
 ```
 
 notes:
-- you can get and list things
+- you can do get and list operations on resources (here nodes)
+- note async syntax in rust to await return from api
 
 ---
 ### Client Runthrough 2
@@ -84,7 +85,9 @@ pods.patch("blog", &serverside, &Patch::Apply(p)).await?
 ```
 
 notes:
-- you can apply, either from structs, or you can force serialize into structs
+- you can patch, or serverside apply
+- either from openapi generated structs
+- or you can force serialize into structs with this syntax checked json macro
 
 
 ---
@@ -113,7 +116,27 @@ let attached = pods.exec("blog", cmd, &params).await?;
 
 notes:
 - we also implement all the special subresources for special case resources
-- you can exec into pods, and you get a set of io streams back that you can tail or pipe into another stream
+- you can exec into pods, and you get a set of io streams back that you can tail or pipe into another streams
+- i.e. take stdin from your cli and pipe it to a container => teleport
+
+
+---
+### Client Runthrough 6
+
+```rust
+let pods: Api<Pod> = Api::default_namespaced(client);
+
+let mut stream = pods.watch(&lp, "0").await?.boxed();
+while let Some(we) = stream.try_next().await? {
+    // TODO: match on we: WatchEvent
+}
+```
+
+notes:
+- streams; async iteration; unlike list where we had to await the full list
+- here we await each element
+- this is base api where you get WatchEvents
+- we don't recommend you actually use this kubernetes api directly because of tons of footguns, it'll desync, reset on you, you need to bookkeep resourceversions etc.
 
 
 
@@ -136,9 +159,12 @@ notes:
 
 
 
+---
+### Lacks
 
-
-
+- apiconfigurations
+- structs not ideal yet
+- protobuf work
 
 
 
