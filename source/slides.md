@@ -567,11 +567,12 @@ notes:
 notes:
 - TODO: links
 
-<!--
 ---
 ### TL;DR: kube
 - rust controllers
 - schema transformations
 - no need to reinvent the wheel
 - RIIR
--->
+
+notes:
+- TODO: remove
