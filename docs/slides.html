@@ -30,75 +30,74 @@
 <li>eirik - one of the main maintainers on kube-rs.</li>
 <li>before we start off; here&#39;s a bunch a bunch of links, me, sources, slides</li>
 <li>go by clux on github, or that on twitter</li>
+<li>purpose of this is to give a quick ecosystem tour plus a chance for some q/a</li>
 </ul>
-</aside></script></section><section  data-markdown><script type="text/template">### What is Kube
+</aside></script></section><section  data-markdown><script type="text/template">
+<a href="https://kube.rs/"><img src="./kube-logo.svg" height="250px"></a>
 
-- Rust client for Kubernetes in the style of a more generic client-go <!-- .element: class="fragment" -->
+- Rust client for Kubernetes inspired by client-go <!-- .element: class="fragment" -->
 - Runtime inspired by controller-runtime <!-- .element: class="fragment" -->
 - Derive macro for CRDs inspired by kubebuilder <!-- .element: class="fragment" -->
+
 
 <aside class="notes"><ul>
 <li>basically reimaginings of: client-go, controller-runtime, kubebuilder, for the rust world</li>
 <li>tons of people have helped make kube support almost as wide as the go land</li>
 <li>managed in a single repo that&#39;s versioned together</li>
 <li>CNCF sandbox</li>
-<li>purpose of this talk is to give a quick ecosystem tour</li>
 </ul>
-</aside></script></section><section  data-markdown><script type="text/template">### Why Rust?
+</aside></script></section><section  data-markdown><script type="text/template"><img src="./rust-logo.png" height="200px">​
 
-- Most loved language since 2015
-- Developer experience
-- High level, yet fast and safe
-- Docs
+- Safety + Expressiveness <!-- .element: class="fragment" -->
+- Major adoption even in big companies <!-- .element: class="fragment" -->
+- Very popular among developers <!-- .element: class="fragment" -->
 
 <aside class="notes"><ul>
-<li>huge popularity, stackoverflow survey has topped it since 2015</li>
-<li>starting to get huge adoption in major companies</li>
-<li>for good reason; developer experience is amazing (error messages tell you what to do, compilers and linters can --fix your code, rust-analyzer, i&#39;m never afraid of what i&#39;ve missed when it compiles)</li>
+<li>very hard to write a large class of common errors, such as null ptr deref and data races</li>
 <li>expressive types that can deal with real world complexity, doesn&#39;t hide things</li>
-<li>Documentation experience is amazing TODO: docs.rs image + doc build</li>
-<li>..and why for kubernetes? well, hope that kube-rs will help convince you to try.</li>
-<li>TODO: images (type annotations analyzer, suggestions)</li>
-<li>TODO: adopters (aws/linkerd/krustlet/cncf projs)</li>
-<li>TODO: safety: <a href="https://twitter.com/LazyFishBarrel">https://twitter.com/LazyFishBarrel</a> memory safety bot</li>
-<li>TODO: ownership/mutability. much easier to reason about. easy to give to juniors and easy to review (only logic errors)</li>
+<li>starting to get huge adoption in major companies (aws/microsoft/bouyant/datadog projs)</li>
+<li>huge popularity, stackoverflow survey has topped it since 2015 - why? DEVX</li>
 </ul>
-<!--</aside></script></section><section  data-markdown><script type="text/template">### Why Rust2
+</aside></script></section><section  data-markdown><script type="text/template"><img src="./rust-logo.png" height="200px">​
 
-- Battle tested generic interfaces
-- No generated code in tree
-- Memory optimization
-- Active community
-- Simpler codebase to follow
-- Rust is taking over (some areas)
+- Developer experience <!-- .element: class="fragment" -->
+
+<img class="fragment" src="./analyzer.png">
+
+- Safety <!-- .element: class="fragment" -->
+- Documentation <!-- .element: class="fragment" -->
 
 <aside class="notes"><ul>
-<li>all sorts of lofty ideas as to why you might choose rust over go here</li>
-<li>but the one that sticks out to me is that this is a much simpler codebase to follow</li>
-<li>and the language makes it very hard for you to make mistakes</li>
-<li>so really, if you are here, it&#39;s likely you are here because you are self-selecting for rust</li>
+<li>error messages tell you what to do, compilers and linters can --fix your code</li>
+<li>rust-analyzer: vs code into ide, gray =&gt; types, not in the source, browse to source outside your crate (even in stdlib)</li>
+<li>much easier to reason about part of code that matters - easy to give to juniors and easy to review (logic errors only), never afraid to merge</li>
+</ul>
+</aside></script></section><section  data-markdown><script type="text/template">### docs.rs
+<img src="./docs-rs.png">
+
+<aside class="notes"><ul>
+<li>docs, signature, clickable links to all types, view source - every crate has this on docs.rs</li>
+<li>examples these are guaranteed to build, many runnable</li>
+<li>rip stackoverflow</li>
 </ul>
 </aside></script></section><section  data-markdown><script type="text/template">### Why Not Rust
 
 - Kubernetes + client-go comes first
-- Edge cases
-- Struct awkwardness (apiconfigurations)
-- Protobufs
-
+- Rust is behind <!-- .element: class="fragment" -->
+- Rust support needs community support <!-- .element: class="fragment" -->
+- Outstanding features <!-- .element: class="fragment" -->
 
 <aside class="notes"><ul>
-<li>Kubernetes, and client-go are going to be where features are originally developed</li>
-<li>not everything will be supported (protobuf transport being the big outstanding piece)</li>
-<li>more obscure features might not exist, or might have edge cases, might have to submit issues</li>
-<li>likely not going to save a</li>
-<li>-&gt;</li>
+<li>all sorts of lofty ideas as to why you might choose rust over go here, and you are likely self-selecting, but there are concerns</li>
+<li>but to some extent we are playing catch up, and need community support (limited amount of people applying elbow grease atm)</li>
+<li>but there are things we don&#39;t have yet like protobuf support and apply configurations</li>
+<li>so up to us to convince you that it&#39;s still worth giving kube-rs a try</li>
 </ul>
 </aside></script></section><section  data-markdown><script type="text/template">### Rust Kubernetes Client
 
 - Config
 - Client
 - Api
-
 
 <aside class="notes"><ul>
 <li>first of all we are a client library; kube_client crate</li>
@@ -256,7 +255,7 @@ while let Some(we) = stream.try_next().await? {
 </ul>
 </aside></script></section><section  data-markdown><script type="text/template">### Api End
 
-=> docs.rs/kube or kube-rs repo under examples
+docs.rs/kube + kube-rs/examples
 
 - docs.rs [`kube::Client`](https://docs.rs/kube/latest/kube/struct.Client.html)
 - docs.rs [`kube::Api`](https://docs.rs/kube/latest/kube/struct.Api.html)
@@ -397,7 +396,7 @@ curl -sSL https://somecrd.yaml | kopium -Af - > gen.rs
 
 <aside class="notes"><ul>
 <li>we are also runtime; kube_runtime runtime, similar to controller-runtime</li>
-<li>has api abstractions</li>
+<li>has api abstractions - client-go/tools</li>
 <li>watcher - to continuously watch an api forever</li>
 <li>reflector - to cache data</li>
 <li>controllers, glue it all together so you can build a reconciler around an owned object</li>
@@ -449,7 +448,6 @@ recorder.publish(Event {
 ```
 
 <aside class="notes"><ul>
-<li>parts of the client-go special helper tools</li>
 <li>eventrecorder fairly common that that&#39;s pretty clean already</li>
 <li>creates events, shows up in kubectl describe</li>
 <li>NB: zwsp in notes...</li>
@@ -530,20 +528,24 @@ finalizer(&api, "docs.kube.rs/cleanup", obj, |event| async {
 - docs.rs [reflector](https://docs.rs/kube/latest/kube/runtime/fn.reflector.html)
 - docs.rs [watcher](https://docs.rs/kube/latest/kube/runtime/fn.watcher.html)
 - docs.rs [conditions](https://docs.rs/kube/latest/kube/runtime/wait/conditions/index.html)
-
+- docs.rs [Controller](https://docs.rs/kube/latest/kube/runtime/struct.Controller.html)
+- docs.rs [finalizer](https://docs.rs/kube/latest/kube/runtime/finalizer/fn.finalizer.html)
 </script></section><section  data-markdown><script type="text/template">### Runtime End
 
 - [kube.rs controller guide](https://kube.rs/controllers/intro/)
-- docs.rs [Controller](https://docs.rs/kube/latest/kube/runtime/struct.Controller.html)
-- docs.rs [finalizer](https://docs.rs/kube/latest/kube/runtime/finalizer/fn.finalizer.html)
-</script></section><section  data-markdown><script type="text/template">### Runtime Examples
-
-- [version-rs](https://github.com/kube-rs/version-rs/blob/main/version.rs)
-- [controller-rs](https://github.com/kube-rs/controller-rs)
+- [kube-rs/version-rs](https://github.com/kube-rs/version-rs/blob/main/version.rs)
+- [kube-rs/controller-rs](https://github.com/kube-rs/controller-rs)
 
 <aside class="notes"><ul>
 <li>100 line reflector with axum, tracing, presents a deployment api</li>
 <li>best practices controller that we update with kube-rs; tracing, metrics, logs, crd generation from schema and kube-derive</li>
+</ul>
+</aside></script></section><section  data-markdown><script type="text/template">### QA
+
+- TODO: discord / github discussions / issues ?
+
+<aside class="notes"><ul>
+<li>TODO: links</li>
 </ul>
 </aside></script></section><section  data-markdown><script type="text/template">### TL;DR: kube
 - rust controllers
@@ -551,22 +553,8 @@ finalizer(&api, "docs.kube.rs/cleanup", obj, |event| async {
 - no need to reinvent the wheel
 - RIIR
 
-
-<!--
-</script></section><section  data-markdown><script type="text/template">### Getting Started
-
-- kube.rs site
-- controller guide
-</script></section><section  data-markdown><script type="text/template">### Getting Involved
-
-- discord
-- github discussions / issues
-</script></section><section  data-markdown><script type="text/template">### QA
-
-
 <aside class="notes"><ul>
-<li>re-highlight links, etc</li>
-<li>-&gt;</li>
+<li>TODO: remove</li>
 </ul>
 </aside></script></section></div>
     </div>
