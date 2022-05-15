@@ -19,6 +19,7 @@ notes:
 - Runtime inspired by controller-runtime <!-- .element: class="fragment" -->
 - Derive macro for CRDs inspired by kubebuilder <!-- .element: class="fragment" -->
 
+
 notes:
 - basically reimaginings of: client-go, controller-runtime, kubebuilder, for the rust world
 - tons of people have helped make kube support almost as wide as the go land
@@ -26,7 +27,7 @@ notes:
 - CNCF sandbox
 
 ---
-<img src="./rust-logo.png" height="250px">​
+<img src="./rust-logo.png" height="200px">​
 
 - Safety + Expressiveness <!-- .element: class="fragment" -->
 - Major adoption even in big companies <!-- .element: class="fragment" -->
@@ -39,19 +40,19 @@ notes:
 - huge popularity, stackoverflow survey has topped it since 2015 - why? DEVX
 
 ---
-<img src="./rust-logo.png" height="250px">​
+<img src="./rust-logo.png" height="200px">​
 
 - Developer experience <!-- .element: class="fragment" -->
-- High level, yet fast and safe <!-- .element: class="fragment" -->
-- Buildable Docs <!-- .element: class="fragment" -->
 
 <img class="fragment" src="./analyzer.png">
 
+- Safety <!-- .element: class="fragment" -->
+- Documentation <!-- .element: class="fragment" -->
+
 notes:
-- for good reason; developer experience is amazing (error messages tell you what to do, compilers and linters can --fix your code, rust-analyzer, i'm never afraid of what i've missed when it compiles)
-- much easier to reason about part of code that matters - easy to give to juniors and easy to review (logic errors only)
-- docs, signature, clickable links to all types, view source - every crate has this on docs.rs
-- examples these are guaranteed to build, many runnable
+- error messages tell you what to do, compilers and linters can --fix your code
+- rust-analyzer: vs code into ide, gray => types, not in the source, browse to source outside your crate (even in stdlib)
+- much easier to reason about part of code that matters - easy to give to juniors and easy to review (logic errors only), never afraid to merge
 
 ---
 ### docs.rs
@@ -62,36 +63,19 @@ notes:
 - examples these are guaranteed to build, many runnable
 - rip stackoverflow
 
-
-<!--
----
-### Why Rust2
-
-- Simpler codebase to follow
-- ..and why for kubernetes? well, hope that kube-rs will help convince you to try.
-
-notes:
-- all sorts of lofty ideas as to why you might choose rust over go here
-- but the one that sticks out to me is that this is a much simpler codebase to follow
-- and the language makes it very hard for you to make mistakes
-- so really, if you are here, it's likely you are here because you are self-selecting for rust
-
 ---
 ### Why Not Rust
 
 - Kubernetes + client-go comes first
-- Edge cases
-- Struct awkwardness (apiconfigurations)
-- Protobufs
-
+- Rust is behind <!-- .element: class="fragment" -->
+- Rust support needs community support <!-- .element: class="fragment" -->
+- Outstanding features <!-- .element: class="fragment" -->
 
 notes:
-- Kubernetes, and client-go are going to be where features are originally developed
-- not everything will be supported (protobuf transport being the big outstanding piece)
-- more obscure features might not exist, or might have edge cases, might have to submit issues
-- likely not going to save a
--->
-
+- all sorts of lofty ideas as to why you might choose rust over go here, and you are likely self-selecting, but there are concerns
+- but to some extent we are playing catch up, and need community support (limited amount of people applying elbow grease atm)
+- but there are things we don't have yet like protobuf support and apply configurations
+- so up to us to convince you that it's still worth giving kube-rs a try
 
 ---
 ### Rust Kubernetes Client
@@ -99,7 +83,6 @@ notes:
 - Config
 - Client
 - Api
-
 
 notes:
 - first of all we are a client library; kube_client crate
@@ -268,7 +251,7 @@ notes:
 ---
 ### Api End
 
-=> docs.rs/kube or kube-rs repo under examples
+docs.rs/kube + kube-rs/examples
 
 - docs.rs [`kube::Client`](https://docs.rs/kube/latest/kube/struct.Client.html)
 - docs.rs [`kube::Api`](https://docs.rs/kube/latest/kube/struct.Api.html)
@@ -279,6 +262,7 @@ notes:
 - basic of a library
 - we support pretty much the full api, so that's super close to client-gold
 - but we don't have protobuf support yet -> codegeneration
+
 
 
 ---
@@ -419,7 +403,7 @@ notes:
 
 notes:
 - we are also runtime; kube_runtime runtime, similar to controller-runtime
-- has api abstractions
+- has api abstractions - client-go/tools
 - watcher - to continuously watch an api forever
 - reflector - to cache data
 - controllers, glue it all together so you can build a reconciler around an owned object
@@ -474,7 +458,6 @@ recorder.publish(Event {
 ```
 
 notes:
-- parts of the client-go special helper tools
 - eventrecorder fairly common that that's pretty clean already
 - creates events, shows up in kubectl describe
 - NB: zwsp in notes...
@@ -562,52 +545,33 @@ notes:
 - docs.rs [reflector](https://docs.rs/kube/latest/kube/runtime/fn.reflector.html)
 - docs.rs [watcher](https://docs.rs/kube/latest/kube/runtime/fn.watcher.html)
 - docs.rs [conditions](https://docs.rs/kube/latest/kube/runtime/wait/conditions/index.html)
-
+- docs.rs [Controller](https://docs.rs/kube/latest/kube/runtime/struct.Controller.html)
+- docs.rs [finalizer](https://docs.rs/kube/latest/kube/runtime/finalizer/fn.finalizer.html)
 
 ---
 ### Runtime End
 
 - [kube.rs controller guide](https://kube.rs/controllers/intro/)
-- docs.rs [Controller](https://docs.rs/kube/latest/kube/runtime/struct.Controller.html)
-- docs.rs [finalizer](https://docs.rs/kube/latest/kube/runtime/finalizer/fn.finalizer.html)
-
----
-### Runtime Examples
-
-- [version-rs](https://github.com/kube-rs/version-rs/blob/main/version.rs)
-- [controller-rs](https://github.com/kube-rs/controller-rs)
+- [kube-rs/version-rs](https://github.com/kube-rs/version-rs/blob/main/version.rs)
+- [kube-rs/controller-rs](https://github.com/kube-rs/controller-rs)
 
 notes:
 - 100 line reflector with axum, tracing, presents a deployment api
 - best practices controller that we update with kube-rs; tracing, metrics, logs, crd generation from schema and kube-derive
 
+---
+### QA
 
+- TODO: discord / github discussions / issues ?
+
+notes:
+- TODO: links
+
+<!--
 ---
 ### TL;DR: kube
 - rust controllers
 - schema transformations
 - no need to reinvent the wheel
 - RIIR
-
-
-<!--
-
----
-### Getting Started
-
-- kube.rs site
-- controller guide
-
----
-### Getting Involved
-
-- discord
-- github discussions / issues
-
----
-### QA
-
-
-notes:
-- re-highlight links, etc
 -->
