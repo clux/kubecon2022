@@ -37,9 +37,46 @@ notes:
 - starting to get huge adoption in major companies
 - for good reason; developer experience is amazing (error messages tell you what to do, compilers and linters can --fix your code, rust-analyzer, i'm never afraid of what i've missed when it compiles)
 - expressive types that can deal with real world complexity, doesn't hide things
-- Documentation experience is amazing TODO: image?
+- Documentation experience is amazing TODO: docs.rs image + doc build
 - ..and why for kubernetes? well, hope that kube-rs will help convince you to try.
-- TODO: can do tons of images here...
+- TODO: images (type annotations analyzer, suggestions)
+- TODO: adopters (aws/linkerd/krustlet/cncf projs)
+- TODO: safety: https://twitter.com/LazyFishBarrel memory safety bot
+- TODO: ownership/mutability. much easier to reason about. easy to give to juniors and easy to review (only logic errors)
+
+<!--
+---
+### Why Rust2
+
+- Battle tested generic interfaces
+- No generated code in tree
+- Memory optimization
+- Active community
+- Simpler codebase to follow
+- Rust is taking over (some areas)
+
+notes:
+- all sorts of lofty ideas as to why you might choose rust over go here
+- but the one that sticks out to me is that this is a much simpler codebase to follow
+- and the language makes it very hard for you to make mistakes
+- so really, if you are here, it's likely you are here because you are self-selecting for rust
+
+---
+### Why Not Rust
+
+- Kubernetes + client-go comes first
+- Edge cases
+- Struct awkwardness (apiconfigurations)
+- Protobufs
+
+
+notes:
+- Kubernetes, and client-go are going to be where features are originally developed
+- not everything will be supported (protobuf transport being the big outstanding piece)
+- more obscure features might not exist, or might have edge cases, might have to submit issues
+- likely not going to save a
+-->
+
 
 ---
 ### Rust Kubernetes Client
@@ -539,45 +576,6 @@ notes:
 
 
 <!--
-
----
-### Lacks
-
-- apiconfigurations
-- structs not ideal yet - not all generic
-- protobuf work
-
-
-
----
-### Why Not Rust
-
-- Kubernetes + client-go comes first
-- Edge cases
-
-
-notes:
-- Kubernetes, and client-go are going to be where features are originally developed
-- not everything will be supported (protobuf transport being the big outstanding piece)
-- more obscure features might not exist, or might have edge cases, might have to submit issues
-- likely not going to save a
-
----
-### Why Rust
-
-- Battle tested generic interfaces
-- No generated code in tree
-- Memory optimization
-- Active community
-- Simpler codebase to follow
-- Rust is taking over (some areas)
-
-notes:
-- all sorts of lofty ideas as to why you might choose rust over go here
-- but the one that sticks out to me is that this is a much simpler codebase to follow
-- and the language makes it very hard for you to make mistakes
-- so really, if you are here, it's likely you are here because you are self-selecting for rust
-
 
 ---
 ### Getting Started
