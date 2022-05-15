@@ -1,3 +1,4 @@
 {
-  "transition": "none"
+  "transition": "none",
+  "center": false
 }

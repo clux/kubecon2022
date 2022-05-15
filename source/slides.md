@@ -192,7 +192,7 @@ notes:
 - we also implement all the special subresources for special case resources
 - you can exec into pods, and you get a set of io streams back that you can tail or pipe into another streams
 - i.e. take stdin from your cli and pipe it to a container => teleport
-
+- or you can issue kill signals, controller called hahaha that kills sidecars in jobs when main container is dead
 
 ---
 ### Api Runthrough 6
@@ -226,13 +226,13 @@ notes:
 notes:
 - basic of a library
 - we support pretty much the full api, so that's super close to client-gold
-- but we don't have protobuf support yet, we have a WIP for it
+- but we don't have protobuf support yet -> codegeneration
 
 
 ---
 ### Code Generation
 
-- CustomResource
+- kube-derive
 - kopium
 - schemars
 - k8s-openapi
@@ -240,32 +240,54 @@ notes:
 
 
 notes:
-- multiple parts - minimize the amount of boilerplate code you have to write
+- big part of rust eco, big reliance on schemas, need to be able to convert
+- want to reduce the boilerplate code you have to write
+- want this to be attractive from people coming from go ecosystem
 - lots of efforts around - not just from us
-- schemars and k8s-openapi are maintained by other people
+- mention the components briefly because feeds into future plans as well as what helpers you should pull in from other parts
 
 ---
 ### Codegen; k8s-openapi
 
-not ours
+```rust
+use k8s_openapi::api::core::v1::{Pod, Node};
+use k8s_openapi::apiextensions_apiserver::pkg::apis{
+  apiextensions::v1::CustomResourceDefinition
+};
+```
+
+notes:
+- where all structs come from atm, where I've been using Pod, Node, C.R.D. type they come from here
+- hefty import paths, but mirrors the upstream paths, all versioned
+- arnavion maintains this
+- but it is not using protobuf
 
 ---
 ### Codegen; k8s-pb
 
-our wip protobuf rewrite
+```rust
+use k8s_pb::api::core::v1::{Pod, Node};
+use k8s_pb::apiextensions_apiserver::pkg::apis{
+  apiextensions::v1::CustomResourceDefinition
+};
+```
+**WIP**
 
 notes:
-- structs only exists if we have schemas for them
-- core kubernetes schemas are released by kubernetes
-- we parse them and generate rust centered structs for them
+- we have structs, but they are not really usable yet.
+- need to do some work on the client, accept protobuf envelopes
+- but the goal is that this will be the drop-in replacement for kube
+- and we have tons of ideas of how this can improve the life of people interacting with big and bulky structs
+
 
 ---
 ### Codegen; CustomResource derive
 
 ```rust
-[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
-#[kube(kind = "Document", group = "kube.rs", version = "v1", namespaced)]
-#[kube(status = "DocumentStatus", shortname = "doc")]
+#[derive(CustomResource, Deserialize, Serialize, Clone, Debug)]
+#[derive(JsonSchema)]
+#[kube(kind = "Document", group = "kube.rs", version = "v1")]
+#[kube(namespaced, shortname = "doc")]
 pub struct DocumentSpec {
     title: String,
     hide: bool,
@@ -273,32 +295,64 @@ pub struct DocumentSpec {
 }
 ```
 
+```rust
+let api: Api<Document> = Api::default_namespaced(client);
+```
+
+
 notes:
 - creates a Document type; that behaves as a k8s-openapi type
-- we can generate crds... wtf how?
+- basically tons of wrappers for a type to be able to to post crds to kube
+- this does all of that. it has properties similar to kubebuilder, but all generated and checked at compile time, no generated code in your repo.
+- we can generate crd schemas for the type.
 
 ---
 ### Codegen; Schemars
 
-recursive impl to get schemas
+```rust
+#[derive(JsonSchema)]
+pub struct MyStruct {
+    my_bool: bool
+}
+```
+generates
+```json
+{
+  "title": "MyStruct",
+  "type": "object",
+  "required": [
+    "my_bool",
+  ],
+  "properties": {
+    "my_bool": {
+      "type": "boolean"
+    }
+  }
+}
+```
 
 notes:
-- very good
+- a derive macro that feels like complete magic
+- but works because you can write out schemas for bools, ints, strings etc
+- and you can slowly build up schemas for lists, maps using those
+- ..you end up with this huge json blob that k8s will accept
+- go back and show with kube-derive
+- rust -> schema, what about other way?
 
 ---
 ### Codegen; kopium
 
-taking openapi schemas and generating rust structs
+```sh
+curl -sSL https://somecrd.yaml | kopium -Af - > gen.rs
+```
+
+![](./kopium-output.png)
 
 notes:
-- taking openapi schemas and generating rust structs
+- kopium takes a crd with schema, and generates rust structs
 - if you have a go controller, take its schema
-- run it through kopium and you got half of a rust controller
-- at least that's the goal
-
-
-
-
+- you got a big part of your rust controller there
+- still pretty new, some issues, but definitely helping a lot of people
 
 
 ---
@@ -306,6 +360,8 @@ notes:
 
 - watcher
 - reflector
+- event recorder
+- conditions
 - Controller
 
 
@@ -338,9 +394,10 @@ notes:
 
 ```rust
 let nodes: Api<Node> = Api::all(client);
+let watch = watcher(nodes, lp);
+
 let (reader, writer) = reflector::store();
-let rf = reflector(writer, watcher(nodes, lp))
-let stream = rf.applied_objects().boxed();
+let stream = reflector(writer, watch).applied_objects()
 ```
 
 notes:
@@ -398,7 +455,7 @@ Controller::new(crdapi, lp)
 ```
 
 notes:
-- controllers. api has similar conventions to controller runtime.
+- when you want to sync an object spec with some state
 - you configure your main api, here some crd
 - configure an owned resource (here configmaps), that will trigger reconcile of owning object by traversing ownerAnnotations
 - you pass in two functions; reconcile and error_policy
@@ -436,26 +493,24 @@ notes:
 ```rust
 finalizer(&api, "docs.kube.rs/cleanup", obj, |event| async {
     match event {
-        Event::Apply(cm) => apply(cm, &secrets).await,
-        Event::Cleanup(cm) => cleanup(cm, &secrets).await,
+        Event::Apply(api) => apply(api, ..args).await,
+        Event::Cleanup(api) => cleanup(api, ..args).await,
     }
 }).await
 ```
 
 notes:
-- common patterns like finalizers we have helpers
-- that
+- common patterns like finalizers we have helpers, wrap reconcile, pass finalizer
 - you can split your main reconcile into two fns apply/cleanup that you create
-- and then the
 
-<!--
+
 ---
 ### Runtime End
 
 - docs.rs [reflector](https://docs.rs/kube/latest/kube/runtime/fn.reflector.html)
 - docs.rs [watcher](https://docs.rs/kube/latest/kube/runtime/fn.watcher.html)
 - docs.rs [conditions](https://docs.rs/kube/latest/kube/runtime/wait/conditions/index.html)
--->
+
 
 ---
 ### Runtime End
@@ -475,9 +530,15 @@ notes:
 - best practices controller that we update with kube-rs; tracing, metrics, logs, crd generation from schema and kube-derive
 
 
+---
+### TL;DR: kube
+- rust controllers
+- schema transformations
+- no need to reinvent the wheel
+- RIIR
 
 
-
+<!--
 
 ---
 ### Lacks
@@ -491,8 +552,8 @@ notes:
 ---
 ### Why Not Rust
 
-- Kubernetes + client-go comes first <!-- .element: class="fragment" -->
-- Edge cases <!-- .element: class="fragment" -->
+- Kubernetes + client-go comes first
+- Edge cases
 
 
 notes:
@@ -519,13 +580,6 @@ notes:
 
 
 ---
-### What You Can Do
-CONTROLLERS, watchers
-Schema transformations
-no need to reinvent the wheel
-RIIR with kopium
-
----
 ### Getting Started
 
 - kube.rs site
@@ -543,3 +597,4 @@ RIIR with kopium
 
 notes:
 - re-highlight links, etc
+-->
