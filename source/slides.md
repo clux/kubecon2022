@@ -9,11 +9,13 @@ notes:
 - eirik - one of the main maintainers on kube-rs.
 - before we start off; here's a bunch a bunch of links, me, sources, slides
 - go by clux on github, or that on twitter
+- purpose of this is to give a quick ecosystem tour plus a chance for some q/a
 
 ---
-### What is Kube
 
-- Rust client for Kubernetes in the style of a more generic client-go <!-- .element: class="fragment" -->
+<a href="https://kube.rs/"><img src="./kube-logo.svg" height="250px"></a>
+
+- Rust client for Kubernetes inspired by client-go <!-- .element: class="fragment" -->
 - Runtime inspired by controller-runtime <!-- .element: class="fragment" -->
 - Derive macro for CRDs inspired by kubebuilder <!-- .element: class="fragment" -->
 
@@ -22,38 +24,51 @@ notes:
 - tons of people have helped make kube support almost as wide as the go land
 - managed in a single repo that's versioned together
 - CNCF sandbox
-- purpose of this talk is to give a quick ecosystem tour
 
 ---
-### Why Rust?
+<img src="./rust-logo.png" height="250px">​
 
-- Most loved language since 2015
-- Developer experience
-- High level, yet fast and safe
-- Docs
+- Safety + Expressiveness <!-- .element: class="fragment" -->
+- Major adoption even in big companies <!-- .element: class="fragment" -->
+- Very popular among developers <!-- .element: class="fragment" -->
 
 notes:
-- huge popularity, stackoverflow survey has topped it since 2015
-- starting to get huge adoption in major companies
-- for good reason; developer experience is amazing (error messages tell you what to do, compilers and linters can --fix your code, rust-analyzer, i'm never afraid of what i've missed when it compiles)
+- very hard to write a large class of common errors, such as null ptr deref and data races
 - expressive types that can deal with real world complexity, doesn't hide things
-- Documentation experience is amazing TODO: docs.rs image + doc build
-- ..and why for kubernetes? well, hope that kube-rs will help convince you to try.
-- TODO: images (type annotations analyzer, suggestions)
-- TODO: adopters (aws/linkerd/krustlet/cncf projs)
-- TODO: safety: https://twitter.com/LazyFishBarrel memory safety bot
-- TODO: ownership/mutability. much easier to reason about. easy to give to juniors and easy to review (only logic errors)
+- starting to get huge adoption in major companies (aws/microsoft/bouyant/datadog projs)
+- huge popularity, stackoverflow survey has topped it since 2015 - why? DEVX
+
+---
+<img src="./rust-logo.png" height="250px">​
+
+- Developer experience <!-- .element: class="fragment" -->
+- High level, yet fast and safe <!-- .element: class="fragment" -->
+- Buildable Docs <!-- .element: class="fragment" -->
+
+<img class="fragment" src="./analyzer.png">
+
+notes:
+- for good reason; developer experience is amazing (error messages tell you what to do, compilers and linters can --fix your code, rust-analyzer, i'm never afraid of what i've missed when it compiles)
+- much easier to reason about part of code that matters - easy to give to juniors and easy to review (logic errors only)
+- docs, signature, clickable links to all types, view source - every crate has this on docs.rs
+- examples these are guaranteed to build, many runnable
+
+---
+### docs.rs
+<img src="./docs-rs.png">
+
+notes:
+- docs, signature, clickable links to all types, view source - every crate has this on docs.rs
+- examples these are guaranteed to build, many runnable
+- rip stackoverflow
+
 
 <!--
 ---
 ### Why Rust2
 
-- Battle tested generic interfaces
-- No generated code in tree
-- Memory optimization
-- Active community
 - Simpler codebase to follow
-- Rust is taking over (some areas)
+- ..and why for kubernetes? well, hope that kube-rs will help convince you to try.
 
 notes:
 - all sorts of lofty ideas as to why you might choose rust over go here
