@@ -1,9 +1,9 @@
-### Kube Introduction
+### Kube-rs Office Hours
 
 - Eirik Albrigtsen
 - [github/clux](https://github.com/clux) / [@sszynrae](https://twitter.com/sszynrae)
 - [https://kube.rs](https://kube.rs)
-- slides at http://clux.github.io/kubecon2022
+- intro slides at http://clux.github.io/kubecon2022
 
 notes:
 - eirik - one of the main maintainers on kube-rs.
@@ -85,10 +85,10 @@ notes:
 - Api
 
 notes:
-- first of all we are a client library; kube_client crate
-- has Config (disk config repr or in-cluster evar repr)
-- that can be turned into a Client
+- 1st; kube_client crate. Config (disk config repr or in-cluster evar repr)
+- that can be turned into a Client, hyper in practice, but more generic
 - with a client you can make api instances; do operations on k8s resources
+- Api opaque wrapper type that can absorb openapi generated kubernetes type (very ez to interact)
 
 ---
 ### Client Standard
@@ -138,8 +138,8 @@ let client = Client::try_default().await?;
 
 notes:
 - in practice; just use the above, get light-weight hyper (likely in tree)
-- we generally just figure out the most sensible thing
-- our auth layer deals basic auth, bearer tokens, refresh tokens via files, oauth, or that scary exec based stuff that someone thought was a good idea, that's now coming back to bite everyone. but yeah, we support everything
+- we deal with all ssl stacks, auth setups
+- be it bearer tokens, refresh tokens via files, oauth, or that scary exec based stuff that someone thought was a good idea, that's now coming back to bite everyone. but yeah, we support everything
 - and when you have a Client, you can query the api
 
 ---
@@ -207,6 +207,11 @@ let pods: Api<Pod> = Api::default_namespaced(client);
 let status = pods.get_status("blog").await?
 ```
 
+generic subresources:
+
+- Status
+- Scale
+
 notes:
 - standard subresource operations
 - Status + Scale are the two main generic subresources
@@ -223,8 +228,12 @@ let params = AttachParams::default().stderr(false);
 let attached = pods.exec("blog", cmd, &params).await?;
 ```
 
+special subresources
+e.g. pods/{logs,exec,attach,portforward,evict}
+
 notes:
 - we also implement all the special subresources for special case resources
+- insofar as they are subresources certificatesigningrequests/approval, but node cordon isn't
 - you can exec into pods, and you get a set of io streams back that you can tail or pipe into another streams
 - i.e. take stdin from your cli and pipe it to a container => teleport
 - or you can issue kill signals, controller called hahaha that kills sidecars in jobs when main container is dead
@@ -240,6 +249,8 @@ while let Some(we) = stream.try_next().await? {
     // TODO: match on we: WatchEvent
 }
 ```
+
+raw watch events
 
 notes:
 - streams; async iteration; unlike list where we had to await the full list
@@ -262,7 +273,6 @@ notes:
 - basic of a library
 - we support pretty much the full api, so that's super close to client-gold
 - but we don't have protobuf support yet -> codegeneration
-
 
 
 ---
@@ -322,7 +332,7 @@ notes:
 ```rust
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug)]
 #[derive(JsonSchema)]
-#[kube(kind = "Document", group = "kube.rs", version = "v1")]
+#[kube(group = "kube.rs", version = "v1", kind = "Document")]
 #[kube(namespaced, shortname = "doc")]
 pub struct DocumentSpec {
     title: String,
