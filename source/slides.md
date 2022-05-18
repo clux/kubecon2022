@@ -140,13 +140,13 @@ let client = Client::try_default().await?;
 
 notes:
 - in practice; just use the above, get light-weight hyper (likely in tree)
-- we deal with both major ssl stacks, auth setups
-- be it bearer tokens, refresh tokens via files, oauth, or that scary exec based stuff that someone thought was a good idea, that's now coming back to bite everyone. but yeah, we support everything
+- we deal with both major ssl stacks, we'll have good default trace layers
+- and hyper is a great http client that's probably alerady in your dependency tree
 - and when you have a Client, you can query the api
 
 ---
 
-### Api Runthrough 1
+### Api Basic 1
 
 ```rust
 let nodes: Api<Node> = Api::all(client);
@@ -162,7 +162,7 @@ notes:
 - note async syntax in rust to await return from api
 
 ---
-### Api Runthrough 2
+### Api Basic 2
 
 ```rust
 let pods: Api<Pod> = Api::default_namespaced(client);
@@ -175,10 +175,10 @@ for pod in pods.list(&ListParams::default()).await? {
 
 notes:
 - api is generic, same interface for all pods
-- can do all the things, delete, delete_collection, create, patch
+- can do all the things, delete, delete_collection, watch, replace, create, patch
 
 ---
-### Api Runthrough 3
+### Api Patch
 
 ```rust
 let pods: Api<Pod> = Api::default_namespaced(client);
@@ -202,7 +202,7 @@ notes:
 - or you can force serialize into structs with this syntax checked json macro
 
 ---
-### Api Runthrough 4
+### Api subresources 1
 
 ```rust
 let pods: Api<Pod> = Api::default_namespaced(client);
@@ -220,7 +220,7 @@ notes:
 - can patch/replace these
 
 ---
-### Api Runthrough 5
+### Api subresources 2
 
 ```rust
 let pods: Api<Pod> = Api::default_namespaced(client);
@@ -241,7 +241,7 @@ notes:
 - or you can issue kill signals, controller called hahaha that kills sidecars in jobs when main container is dead
 
 ---
-### Api Runthrough 6
+### Api::watch
 
 ```rust
 let pods: Api<Pod> = Api::default_namespaced(client);
@@ -256,13 +256,13 @@ raw watch events
 
 notes:
 - streams; async iteration; unlike list where we had to await the full list
-- here we await each element - using TryStream trait
-- this is base api where you get WatchEvents
-- we don't recommend you actually use this kubernetes api directly because of tons of footguns, it'll desync, reset on you, you need to bookkeep resourceversions etc.
-
+- here we await each element - in theory this runs forever
+- but in practice no, because the watch api is kind of bad; desync/reset/resource vers/bookmarks/pre-lists
+- also WatchEvents wrap - which it's actually unsafe to rely on
+- don't want to use this manually unless you really know what you're doing
 
 ---
-### Api End
+### kube-client
 
 docs.rs/kube + kube-rs/examples
 
@@ -272,19 +272,18 @@ docs.rs/kube + kube-rs/examples
 - [examples/kubectl](https://github.com/kube-rs/kube-rs/blob/master/examples/kubectl.rs)
 
 notes:
-- basic of a library
+- basics of a client library - api mirrors what the api is - no magic extensions just the api
 - we support pretty much the full api, so that's super close to client-gold
 - but we don't have protobuf support yet -> codegeneration
-
 
 ---
 ### Code Generation
 
+- k8s-openapi
+- k8s-pb
 - kube-derive
 - kopium
 - schemars
-- k8s-openapi
-- k8s-pb
 
 
 notes:
@@ -404,13 +403,26 @@ notes:
 
 
 ---
+### Codegen
+
+- k8s-openapi
+- k8s-pb
+- kube-derive
+- kopium
+- schemars
+
+notes:
+- first two; core kubernetes structs
+- 3/4th; crds, kopium imports, kube-derive exports (requires schemars)
+- crates or repos in their own right, we work on the middle 3
+
+---
 ### Runtime
 
-- watcher
-- reflector
-- event recorder
+- watchers
+- reflectors
 - conditions
-- Controller
+- controllers
 
 
 notes:
