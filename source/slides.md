@@ -18,12 +18,14 @@ notes:
 - Rust client for Kubernetes inspired by client-go <!-- .element: class="fragment" -->
 - Runtime inspired by controller-runtime <!-- .element: class="fragment" -->
 - Derive macro for CRDs inspired by kubebuilder <!-- .element: class="fragment" -->
+- kube crate == everything <!-- .element: class="fragment" -->
 
 
 notes:
 - basically reimaginings of: client-go, controller-runtime, kubebuilder, for the rust world
 - tons of people have helped make kube support almost as wide as the go land
 - managed in a single repo that's versioned together
+- facade crate called `kube` where you can enable exactly the subset of that that you want
 - CNCF sandbox
 
 ---
@@ -138,7 +140,7 @@ let client = Client::try_default().await?;
 
 notes:
 - in practice; just use the above, get light-weight hyper (likely in tree)
-- we deal with all ssl stacks, auth setups
+- we deal with both major ssl stacks, auth setups
 - be it bearer tokens, refresh tokens via files, oauth, or that scary exec based stuff that someone thought was a good idea, that's now coming back to bite everyone. but yeah, we support everything
 - and when you have a Client, you can query the api
 
@@ -570,19 +572,15 @@ notes:
 - best practices controller that we update with kube-rs; tracing, metrics, logs, crd generation from schema and kube-derive
 
 ---
-### QA
+<a href="https://kube.rs/"><img src="./kube-logo.svg" height="250px"></a>
 
-- TODO: discord / github discussions / issues ?
-
-notes:
-- TODO: links
-
----
-### TL;DR: kube
-- rust controllers
-- schema transformations
-- no need to reinvent the wheel
-- RIIR
+- Rust client for Kubernetes inspired by client-go
+- Runtime inspired by controller-runtime
+- Derive macro for CRDs inspired by kubebuilder
+- kopium + k8s-pb (codegen)
+- controller-rs + version-rs (examples)
 
 notes:
-- TODO: remove
+- hopefully no need to reinvent the wheel
+- first 3 in kube-rs repo, extra repos for codegen, big example repos in org
+- mention discord / github discussions / issues
