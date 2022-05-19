@@ -6,7 +6,7 @@
 - [https://kube.rs](https://kube.rs)
 
 notes:
-- eirik - a maintainer on kube-rs
+- eirik - a maintainer on kube-rs, VofficeHr first time.
 - links, me, sources, slides (under my github), kube-rs has website
 - purpose: quick intro, answer basic what is / future goals, and give a quick ecosystem tour
 - q/a in about 20min time
@@ -265,11 +265,11 @@ notes:
 
 
 notes:
-- big part of rust eco, big reliance on schemas, need to be able to convert
-- want to reduce the boilerplate code you have to write
+- big part of rust eco, structs generally come from go, so need to implement them in rust via schemas
+- also want to reduce the boilerplate code you have to write, helper fns, builders
 - want this to be attractive from people coming from go ecosystem
 - lots of efforts around - not just from us
-- mention the components briefly because feeds into future plans as well as what helpers you should pull in from other parts
+- mention the components briefly because feeds into future plans & references exposed dependencies
 
 ---
 ### Codegen; k8s-openapi
@@ -282,10 +282,10 @@ use k8s_openapi::apiextensions_apiserver::pkg::apis{
 ```
 
 notes:
-- where all structs come from atm, where I've been using Pod, Node, C.R.D. type they come from here
-- hefty import paths, but mirrors the upstream paths, all versioned
-- arnavion maintains this
-- but it is not using protobuf
+- openapi -> struct gen, got all native k8s types
+- hefty import paths that mirror the kubernetes paths, everything's versioned
+- one of oldest part of rust ecosystem, upstreamed numerous schema bugs, hardly any problems now
+- but: not using protobuf
 
 ---
 ### Codegen; k8s-pb
@@ -299,10 +299,9 @@ use k8s_pb::apiextensions_apiserver::pkg::apis{
 **WIP**
 
 notes:
-- we have structs, but they are not really usable yet.
-- need to do some work on the client, accept protobuf envelopes
-- but the goal is that this will be the drop-in replacement for kube
-- and we have tons of ideas of how this can improve the life of people interacting with big and bulky structs
+- working on a pb version of this - but they are usable yet.
+- the goal is that this will be the drop-in replacement for kube
+- and we have tons of ideas of how this can improve the life of people interacting with big and bulky structs filled with option types
 
 
 ---
@@ -322,14 +321,16 @@ pub struct DocumentSpec {
 
 ```rust
 let api: Api<Document> = Api::default_namespaced(client);
+let d = Document::new("blogpost", DocumentSpec { ... });
 ```
 
 
 notes:
-- creates a Document type; that behaves as a k8s-openapi type
-- basically tons of wrappers for a type to be able to to post crds to kube
-- this does all of that. it has properties similar to kubebuilder, but all generated and checked at compile time, no generated code in your repo.
-- we can generate crd schemas for the type.
+- crd writing; need to wrap (apiVersion, Kind, metadata). our kube-derive proc_macro does this (derive CR)
+- generates the top level type (Document), creates builders. can create doc easily, and pass it to api.create
+- all integrated into cargo/rust, no generated code in your repo
+- can configure everything in a kubebuilder style
+- Document also gets a crd method to generate the crd with the schema (can ship/write to disk) (via schemars)
 
 ---
 ### Codegen; Schemars
@@ -357,12 +358,10 @@ generates
 ```
 
 notes:
-- a derive macro that feels like complete magic
-- but works because you can write out schemas for bools, ints, strings etc
-- and you can slowly build up schemas for lists, maps using those
-- ..you end up with this huge json blob that k8s will accept
-- go back and show with kube-derive
-- rust -> schema, what about other way?
+- derive macro by schemars
+- very popular library with lots of improvements in the last year
+- kube-derive requires it (schemas req as of k8s 1.16)
+- so deriving CR: rust -> schema, what about other way? go structs for CR?
 
 ---
 ### Codegen; kopium
