@@ -19,32 +19,32 @@
   </head>
   <body>
     <div class="reveal">
-      <div class="slides"><section  data-markdown><script type="text/template">### Kube Introduction
+      <div class="slides"><section  data-markdown><script type="text/template">### Kube-rs Office Hours
 
 - Eirik Albrigtsen
-- [github/clux](https://github.com/clux) / [@sszynrae](https://twitter.com/sszynrae)
-- [https://kube.rs](https://kube.rs)
+- [github/clux](https://github.com/clux) / [twitter/sszynrae](https://twitter.com/sszynrae)
 - slides at http://clux.github.io/kubecon2022
+- [https://kube.rs](https://kube.rs)
 
 <aside class="notes"><ul>
-<li>eirik - one of the main maintainers on kube-rs.</li>
-<li>before we start off; here&#39;s a bunch a bunch of links, me, sources, slides</li>
-<li>go by clux on github, or that on twitter</li>
-<li>purpose of this is to give a quick ecosystem tour plus a chance for some q/a</li>
+<li>eirik - a maintainer on kube-rs, VofficeHr first time.</li>
+<li>links, me, sources, slides (under my github), kube-rs has website</li>
+<li>purpose: quick intro, answer basic what is / future goals, and give a quick ecosystem tour</li>
+<li>q/a in about 20min time</li>
 </ul>
-</aside></script></section><section  data-markdown><script type="text/template">
-<a href="https://kube.rs/"><img src="./kube-logo.svg" height="250px"></a>
+</aside></script></section><section  data-markdown><script type="text/template"><a href="https://kube.rs/"><img src="./kube-logo.svg" height="250px"></a>
 
 - Rust client for Kubernetes inspired by client-go <!-- .element: class="fragment" -->
 - Runtime inspired by controller-runtime <!-- .element: class="fragment" -->
 - Derive macro for CRDs inspired by kubebuilder <!-- .element: class="fragment" -->
+- kube crate == everything <!-- .element: class="fragment" -->
 
 
 <aside class="notes"><ul>
-<li>basically reimaginings of: client-go, controller-runtime, kubebuilder, for the rust world</li>
-<li>tons of people have helped make kube support almost as wide as the go land</li>
+<li>a rust ecosystem for kubernetes apps; client-go, controller-runtime, kubebuilder</li>
 <li>managed in a single repo that&#39;s versioned together</li>
-<li>CNCF sandbox</li>
+<li>facade crate called <code>kube</code> where you can enable exactly the subset of that that you want</li>
+<li>tons of people have helped make kube support almost as wide as the go land</li>
 </ul>
 </aside></script></section><section  data-markdown><script type="text/template"><img src="./rust-logo.png" height="200px">​
 
@@ -89,9 +89,9 @@
 
 <aside class="notes"><ul>
 <li>all sorts of lofty ideas as to why you might choose rust over go here, and you are likely self-selecting, but there are concerns</li>
-<li>but to some extent we are playing catch up, and need community support (limited amount of people applying elbow grease atm)</li>
+<li>we are playing catch up, and need community support (more obscure features might require elbow grease)</li>
+<li>on the plus side the main kubernetes generics (what we rewrite) dont change very often</li>
 <li>but there are things we don&#39;t have yet like protobuf support and apply configurations</li>
-<li>so up to us to convince you that it&#39;s still worth giving kube-rs a try</li>
 </ul>
 </aside></script></section><section  data-markdown><script type="text/template">### Rust Kubernetes Client
 
@@ -100,10 +100,10 @@
 - Api
 
 <aside class="notes"><ul>
-<li>first of all we are a client library; kube_client crate</li>
-<li>has Config (disk config repr or in-cluster evar repr)</li>
-<li>that can be turned into a Client</li>
+<li>1st; kube_client crate. Config (disk config repr or in-cluster evar repr)</li>
+<li>that can be turned into a Client (config is just conn/tls params)</li>
 <li>with a client you can make api instances; do operations on k8s resources</li>
+<li>Api opaque wrapper type that can absorb openapi generated kubernetes type (very ez to interact)</li>
 </ul>
 </aside></script></section><section  data-markdown><script type="text/template">### Client Standard
 
@@ -111,7 +111,7 @@
 let client = Client::try_default().await?;
 ```
 
-==
+same as:
 
 ```rust
 let config = Config::infer().await?
@@ -148,14 +148,18 @@ let client = Client::new(service, config.default_namespace);
 let client = Client::try_default().await?;
 ```
 
+- works inside and outside cluster
+- hyper by default <!-- .element: class="fragment" -->
+- uses available tls stack <!-- .element: class="fragment" -->
+- sensible default layers <!-- .element: class="fragment" -->
+
 <aside class="notes"><ul>
 <li>in practice; just use the above, get light-weight hyper (likely in tree)</li>
-<li>we generally just figure out the most sensible thing</li>
-<li>our auth layer deals basic auth, bearer tokens, refresh tokens via files, oauth, or that scary exec based stuff that someone thought was a good idea, that&#39;s now coming back to bite everyone. but yeah, we support everything</li>
+<li>we deal with both major ssl stacks, we&#39;ll have good default trace layers</li>
+<li>and hyper is a great http client that&#39;s probably alerady in your dependency tree</li>
 <li>and when you have a Client, you can query the api</li>
 </ul>
-</aside></script></section><section  data-markdown><script type="text/template">
-### Api Runthrough 1
+</aside></script></section><section  data-markdown><script type="text/template">### Api Basic 1
 
 ```rust
 let nodes: Api<Node> = Api::all(client);
@@ -170,7 +174,7 @@ for node in nodes.list(&ListParams::default()).await? {
 <li>you can do get and list operations on resources (here nodes)</li>
 <li>note async syntax in rust to await return from api</li>
 </ul>
-</aside></script></section><section  data-markdown><script type="text/template">### Api Runthrough 2
+</aside></script></section><section  data-markdown><script type="text/template">### Api Basic 2
 
 ```rust
 let pods: Api<Pod> = Api::default_namespaced(client);
@@ -183,44 +187,26 @@ for pod in pods.list(&ListParams::default()).await? {
 
 <aside class="notes"><ul>
 <li>api is generic, same interface for all pods</li>
-<li>can do all the things, delete, delete_collection, create, patch</li>
+<li>methods: get/list/delete/delete_collection/replace/create/patch and watch</li>
 </ul>
-</aside></script></section><section  data-markdown><script type="text/template">### Api Runthrough 3
-
-```rust
-let pods: Api<Pod> = Api::default_namespaced(client);
-let p: Pod = serde_json::from_value(json!({
-    "apiVersion": "v1",
-    "kind": "Pod",
-    "metadata": { "name": "blog" },
-    "spec": {
-        "containers": [{
-            "name": "blog",
-            "image": "clux/blog:0.1.0"
-        }],
-    }
-}))?;
-pods.patch("blog", &serverside, &Patch::Apply(p)).await?
-```
-
-<aside class="notes"><ul>
-<li>you can patch, or serverside apply</li>
-<li>either from openapi generated structs</li>
-<li>or you can force serialize into structs with this syntax checked json macro</li>
-</ul>
-</aside></script></section><section  data-markdown><script type="text/template">### Api Runthrough 4
+</aside></script></section><section  data-markdown><script type="text/template">### Api subresources 1
 
 ```rust
 let pods: Api<Pod> = Api::default_namespaced(client);
 let status = pods.get_status("blog").await?
 ```
 
+generic subresources:
+
+- Status
+- Scale
+
 <aside class="notes"><ul>
 <li>standard subresource operations</li>
 <li>Status + Scale are the two main generic subresources</li>
 <li>can patch/replace these</li>
 </ul>
-</aside></script></section><section  data-markdown><script type="text/template">### Api Runthrough 5
+</aside></script></section><section  data-markdown><script type="text/template">### Api subresources 2
 
 ```rust
 let pods: Api<Pod> = Api::default_namespaced(client);
@@ -230,13 +216,17 @@ let params = AttachParams::default().stderr(false);
 let attached = pods.exec("blog", cmd, &params).await?;
 ```
 
+special subresources
+e.g. pods/{logs,exec,attach,portforward,evict}
+
 <aside class="notes"><ul>
 <li>we also implement all the special subresources for special case resources</li>
+<li>insofar as they are subresources certificatesigningrequests/approval, but node cordon isn&#39;t</li>
 <li>you can exec into pods, and you get a set of io streams back that you can tail or pipe into another streams</li>
 <li>i.e. take stdin from your cli and pipe it to a container =&gt; teleport</li>
 <li>or you can issue kill signals, controller called hahaha that kills sidecars in jobs when main container is dead</li>
 </ul>
-</aside></script></section><section  data-markdown><script type="text/template">### Api Runthrough 6
+</aside></script></section><section  data-markdown><script type="text/template">### Api::watch
 
 ```rust
 let pods: Api<Pod> = Api::default_namespaced(client);
@@ -247,41 +237,44 @@ while let Some(we) = stream.try_next().await? {
 }
 ```
 
+raw watch events
+
 <aside class="notes"><ul>
 <li>streams; async iteration; unlike list where we had to await the full list</li>
-<li>here we await each element - using TryStream trait</li>
-<li>this is base api where you get WatchEvents</li>
-<li>we don&#39;t recommend you actually use this kubernetes api directly because of tons of footguns, it&#39;ll desync, reset on you, you need to bookkeep resourceversions etc.</li>
+<li>here we await each element - in theory this runs forever</li>
+<li>but in practice no, because the watch api is kind of bad; desync/reset/resource vers/bookmarks/pre-lists</li>
+<li>also WatchEvents wrap - which it&#39;s actually unsafe to rely on</li>
+<li>don&#39;t want to use this manually unless you really know what you&#39;re doing</li>
 </ul>
-</aside></script></section><section  data-markdown><script type="text/template">### Api End
+</aside></script></section><section  data-markdown><script type="text/template">### kube-client
 
 docs.rs/kube + kube-rs/examples
 
-- docs.rs [`kube::Client`](https://docs.rs/kube/latest/kube/struct.Client.html)
-- docs.rs [`kube::Api`](https://docs.rs/kube/latest/kube/struct.Api.html)
+- docs.rs/kube [`kube::Client`](https://docs.rs/kube/latest/kube/struct.Client.html)
+- docs.rs/kube [`kube::Api`](https://docs.rs/kube/latest/kube/struct.Api.html)
 - [examples](https://github.com/kube-rs/kube-rs/tree/master/examples)
 - [examples/kubectl](https://github.com/kube-rs/kube-rs/blob/master/examples/kubectl.rs)
 
 <aside class="notes"><ul>
-<li>basic of a library</li>
+<li>basics of a client library - api mirrors what the api is - no magic extensions just the api</li>
 <li>we support pretty much the full api, so that&#39;s super close to client-gold</li>
 <li>but we don&#39;t have protobuf support yet -&gt; codegeneration</li>
 </ul>
 </aside></script></section><section  data-markdown><script type="text/template">### Code Generation
 
+- k8s-openapi
+- k8s-pb
 - kube-derive
 - kopium
 - schemars
-- k8s-openapi
-- k8s-pb
 
 
 <aside class="notes"><ul>
-<li>big part of rust eco, big reliance on schemas, need to be able to convert</li>
-<li>want to reduce the boilerplate code you have to write</li>
+<li>big part of rust eco, structs generally come from go, so need to implement them in rust via schemas</li>
+<li>also want to reduce the boilerplate code you have to write, helper fns, builders</li>
 <li>want this to be attractive from people coming from go ecosystem</li>
 <li>lots of efforts around - not just from us</li>
-<li>mention the components briefly because feeds into future plans as well as what helpers you should pull in from other parts</li>
+<li>mention the components briefly because feeds into future plans &amp; references exposed dependencies</li>
 </ul>
 </aside></script></section><section  data-markdown><script type="text/template">### Codegen; k8s-openapi
 
@@ -293,10 +286,10 @@ use k8s_openapi::apiextensions_apiserver::pkg::apis{
 ```
 
 <aside class="notes"><ul>
-<li>where all structs come from atm, where I&#39;ve been using Pod, Node, C.R.D. type they come from here</li>
-<li>hefty import paths, but mirrors the upstream paths, all versioned</li>
-<li>arnavion maintains this</li>
-<li>but it is not using protobuf</li>
+<li>openapi -&gt; struct gen, got all native k8s types</li>
+<li>hefty import paths that mirror the kubernetes paths, everything&#39;s versioned</li>
+<li>one of oldest part of rust ecosystem, upstreamed numerous schema bugs, hardly any problems now</li>
+<li>but: not using protobuf</li>
 </ul>
 </aside></script></section><section  data-markdown><script type="text/template">### Codegen; k8s-pb
 
@@ -309,17 +302,16 @@ use k8s_pb::apiextensions_apiserver::pkg::apis{
 **WIP**
 
 <aside class="notes"><ul>
-<li>we have structs, but they are not really usable yet.</li>
-<li>need to do some work on the client, accept protobuf envelopes</li>
-<li>but the goal is that this will be the drop-in replacement for kube</li>
-<li>and we have tons of ideas of how this can improve the life of people interacting with big and bulky structs</li>
+<li>working on a pb version of this - but they are usable yet.</li>
+<li>the goal is that this will be the drop-in replacement for kube</li>
+<li>and we have tons of ideas of how this can improve the life of people interacting with big and bulky structs filled with option types</li>
 </ul>
 </aside></script></section><section  data-markdown><script type="text/template">### Codegen; CustomResource derive
 
 ```rust
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug)]
 #[derive(JsonSchema)]
-#[kube(kind = "Document", group = "kube.rs", version = "v1")]
+#[kube(group = "kube.rs", version = "v1", kind = "Document")]
 #[kube(namespaced, shortname = "doc")]
 pub struct DocumentSpec {
     title: String,
@@ -330,14 +322,16 @@ pub struct DocumentSpec {
 
 ```rust
 let api: Api<Document> = Api::default_namespaced(client);
+let d = Document::new("blogpost", DocumentSpec { ... });
 ```
 
 
 <aside class="notes"><ul>
-<li>creates a Document type; that behaves as a k8s-openapi type</li>
-<li>basically tons of wrappers for a type to be able to to post crds to kube</li>
-<li>this does all of that. it has properties similar to kubebuilder, but all generated and checked at compile time, no generated code in your repo.</li>
-<li>we can generate crd schemas for the type.</li>
+<li>crd writing; need to wrap (apiVersion, Kind, metadata). our kube-derive proc_macro does this (derive CR)</li>
+<li>generates the top level type (Document), creates builders. can create doc easily, and pass it to api.create</li>
+<li>all integrated into cargo/rust, no generated code in your repo</li>
+<li>can configure everything in a kubebuilder style</li>
+<li>Document also gets a crd method to generate the crd with the schema (can ship/write to disk) (via schemars)</li>
 </ul>
 </aside></script></section><section  data-markdown><script type="text/template">### Codegen; Schemars
 
@@ -364,12 +358,10 @@ generates
 ```
 
 <aside class="notes"><ul>
-<li>a derive macro that feels like complete magic</li>
-<li>but works because you can write out schemas for bools, ints, strings etc</li>
-<li>and you can slowly build up schemas for lists, maps using those</li>
-<li>..you end up with this huge json blob that k8s will accept</li>
-<li>go back and show with kube-derive</li>
-<li>rust -&gt; schema, what about other way?</li>
+<li>derive macro by schemars</li>
+<li>very popular library with lots of improvements in the last year</li>
+<li>kube-derive requires it (schemas req as of k8s 1.16)</li>
+<li>so deriving CR: rust -&gt; schema, what about other way? go structs for CR?</li>
 </ul>
 </aside></script></section><section  data-markdown><script type="text/template">### Codegen; kopium
 
@@ -385,13 +377,25 @@ curl -sSL https://somecrd.yaml | kopium -Af - > gen.rs
 <li>you got a big part of your rust controller there</li>
 <li>still pretty new, some issues, but definitely helping a lot of people</li>
 </ul>
+</aside></script></section><section  data-markdown><script type="text/template">### Codegen
+
+- k8s-openapi
+- k8s-pb
+- kube-derive
+- kopium
+- schemars
+
+<aside class="notes"><ul>
+<li>first two; core kubernetes structs</li>
+<li>3/4th; crds, kopium imports, kube-derive exports (requires schemars)</li>
+<li>crates or repos in their own right, we work on the middle 3</li>
+</ul>
 </aside></script></section><section  data-markdown><script type="text/template">### Runtime
 
-- watcher
-- reflector
-- event recorder
+- watchers
+- reflectors
 - conditions
-- Controller
+- controllers
 
 
 <aside class="notes"><ul>
@@ -540,21 +544,54 @@ finalizer(&api, "docs.kube.rs/cleanup", obj, |event| async {
 <li>100 line reflector with axum, tracing, presents a deployment api</li>
 <li>best practices controller that we update with kube-rs; tracing, metrics, logs, crd generation from schema and kube-derive</li>
 </ul>
-</aside></script></section><section  data-markdown><script type="text/template">### QA
+</aside></script></section><section  data-markdown><script type="text/template"><a href="https://kube.rs/"><img src="./kube-logo.svg" height="250px"></a>
 
-- TODO: discord / github discussions / issues ?
+- Rust client for Kubernetes inspired by client-go
+- Runtime inspired by controller-runtime
+- Derive macro for CRDs inspired by kubebuilder
+- kopium + k8s-pb (codegen)
+- controller-rs + version-rs (examples)
 
 <aside class="notes"><ul>
-<li>TODO: links</li>
+<li>hopefully no need to reinvent the wheel</li>
+<li>first 3 in kube-rs repo, extra repos for codegen, big example repos in org</li>
+<li>mention discord / github discussions / issues</li>
 </ul>
-</aside></script></section><section  data-markdown><script type="text/template">### TL;DR: kube
-- rust controllers
-- schema transformations
-- no need to reinvent the wheel
-- RIIR
+</aside></script></section><section  data-markdown><script type="text/template">### EOF / QA
+
+^C
+
+
+:wq
+
+&nbsp;
+
+&nbsp;
+
+&nbsp;
+
+༼つಠ益ಠ ༽つ ─=≡ΣO))</script></section><section  data-markdown><script type="text/template">### Api Patch
+
+```rust
+let pods: Api<Pod> = Api::default_namespaced(client);
+let p: Pod = serde_json::from_value(json!({
+    "apiVersion": "v1",
+    "kind": "Pod",
+    "metadata": { "name": "blog" },
+    "spec": {
+        "containers": [{
+            "name": "blog",
+            "image": "clux/blog:0.1.0"
+        }],
+    }
+}))?;
+pods.patch("blog", &serverside, &Patch::Apply(p)).await?
+```
 
 <aside class="notes"><ul>
-<li>TODO: remove</li>
+<li>you can patch, or serverside apply</li>
+<li>either from openapi generated structs</li>
+<li>or you can force serialize into structs with this syntax checked json macro</li>
 </ul>
 </aside></script></section></div>
     </div>
