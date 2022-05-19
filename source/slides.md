@@ -1,18 +1,17 @@
 ### Kube-rs Office Hours
 
 - Eirik Albrigtsen
-- [github/clux](https://github.com/clux) / [@sszynrae](https://twitter.com/sszynrae)
+- [github/clux](https://github.com/clux) / [twitter/sszynrae](https://twitter.com/sszynrae)
+- slides at http://clux.github.io/kubecon2022
 - [https://kube.rs](https://kube.rs)
-- intro slides at http://clux.github.io/kubecon2022
 
 notes:
-- eirik - one of the main maintainers on kube-rs.
-- before we start off; here's a bunch a bunch of links, me, sources, slides
-- go by clux on github, or that on twitter
-- purpose of this is to give a quick ecosystem tour plus a chance for some q/a
+- eirik - a maintainer on kube-rs
+- links, me, sources, slides (under my github), kube-rs has website
+- purpose: quick intro, answer basic what is / future goals, and give a quick ecosystem tour
+- q/a in about 20min time
 
 ---
-
 <a href="https://kube.rs/"><img src="./kube-logo.svg" height="250px"></a>
 
 - Rust client for Kubernetes inspired by client-go <!-- .element: class="fragment" -->
@@ -22,11 +21,10 @@ notes:
 
 
 notes:
-- basically reimaginings of: client-go, controller-runtime, kubebuilder, for the rust world
-- tons of people have helped make kube support almost as wide as the go land
+- a rust ecosystem for kubernetes apps; client-go, controller-runtime, kubebuilder
 - managed in a single repo that's versioned together
 - facade crate called `kube` where you can enable exactly the subset of that that you want
-- CNCF sandbox
+- tons of people have helped make kube support almost as wide as the go land
 
 ---
 <img src="./rust-logo.png" height="200px">​
@@ -75,9 +73,9 @@ notes:
 
 notes:
 - all sorts of lofty ideas as to why you might choose rust over go here, and you are likely self-selecting, but there are concerns
-- but to some extent we are playing catch up, and need community support (limited amount of people applying elbow grease atm)
+- we are playing catch up, and need community support (more obscure features might require elbow grease)
+- on the plus side the main kubernetes generics (what we rewrite) dont change very often
 - but there are things we don't have yet like protobuf support and apply configurations
-- so up to us to convince you that it's still worth giving kube-rs a try
 
 ---
 ### Rust Kubernetes Client
@@ -88,7 +86,7 @@ notes:
 
 notes:
 - 1st; kube_client crate. Config (disk config repr or in-cluster evar repr)
-- that can be turned into a Client, hyper in practice, but more generic
+- that can be turned into a Client (config is just conn/tls params)
 - with a client you can make api instances; do operations on k8s resources
 - Api opaque wrapper type that can absorb openapi generated kubernetes type (very ez to interact)
 
@@ -99,7 +97,7 @@ notes:
 let client = Client::try_default().await?;
 ```
 
-==
+same as:
 
 ```rust
 let config = Config::infer().await?
@@ -138,6 +136,11 @@ notes:
 let client = Client::try_default().await?;
 ```
 
+- works inside and outside cluster
+- hyper by default <!-- .element: class="fragment" -->
+- uses available tls stack <!-- .element: class="fragment" -->
+- sensible default layers <!-- .element: class="fragment" -->
+
 notes:
 - in practice; just use the above, get light-weight hyper (likely in tree)
 - we deal with both major ssl stacks, we'll have good default trace layers
@@ -145,7 +148,6 @@ notes:
 - and when you have a Client, you can query the api
 
 ---
-
 ### Api Basic 1
 
 ```rust
@@ -175,31 +177,7 @@ for pod in pods.list(&ListParams::default()).await? {
 
 notes:
 - api is generic, same interface for all pods
-- can do all the things, delete, delete_collection, watch, replace, create, patch
-
----
-### Api Patch
-
-```rust
-let pods: Api<Pod> = Api::default_namespaced(client);
-let p: Pod = serde_json::from_value(json!({
-    "apiVersion": "v1",
-    "kind": "Pod",
-    "metadata": { "name": "blog" },
-    "spec": {
-        "containers": [{
-            "name": "blog",
-            "image": "clux/blog:0.1.0"
-        }],
-    }
-}))?;
-pods.patch("blog", &serverside, &Patch::Apply(p)).await?
-```
-
-notes:
-- you can patch, or serverside apply
-- either from openapi generated structs
-- or you can force serialize into structs with this syntax checked json macro
+- methods: get/list/delete/delete_collection/replace/create/patch and watch
 
 ---
 ### Api subresources 1
@@ -266,8 +244,8 @@ notes:
 
 docs.rs/kube + kube-rs/examples
 
-- docs.rs [`kube::Client`](https://docs.rs/kube/latest/kube/struct.Client.html)
-- docs.rs [`kube::Api`](https://docs.rs/kube/latest/kube/struct.Api.html)
+- docs.rs/kube [`kube::Client`](https://docs.rs/kube/latest/kube/struct.Client.html)
+- docs.rs/kube [`kube::Api`](https://docs.rs/kube/latest/kube/struct.Api.html)
 - [examples](https://github.com/kube-rs/kube-rs/tree/master/examples)
 - [examples/kubectl](https://github.com/kube-rs/kube-rs/blob/master/examples/kubectl.rs)
 
@@ -596,3 +574,43 @@ notes:
 - hopefully no need to reinvent the wheel
 - first 3 in kube-rs repo, extra repos for codegen, big example repos in org
 - mention discord / github discussions / issues
+
+
+---
+### EOF / QA
+
+^C
+
+
+:wq
+
+&nbsp;
+
+&nbsp;
+
+&nbsp;
+
+༼つಠ益ಠ ༽つ ─=≡ΣO))
+---
+### Api Patch
+
+```rust
+let pods: Api<Pod> = Api::default_namespaced(client);
+let p: Pod = serde_json::from_value(json!({
+    "apiVersion": "v1",
+    "kind": "Pod",
+    "metadata": { "name": "blog" },
+    "spec": {
+        "containers": [{
+            "name": "blog",
+            "image": "clux/blog:0.1.0"
+        }],
+    }
+}))?;
+pods.patch("blog", &serverside, &Patch::Apply(p)).await?
+```
+
+notes:
+- you can patch, or serverside apply
+- either from openapi generated structs
+- or you can force serialize into structs with this syntax checked json macro
