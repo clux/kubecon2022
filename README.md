@@ -4,7 +4,7 @@ https://kccnceu2022.sched.com/event/zL7J/virtual-project-office-hours-kube-rs
 
 ## Hello KubeCon :wave:
 
-These are my **WIP** rough slides for the office hour session.
+These are my rough slides for the office hour session.
 
 Check out [kube.rs](https://kube.rs) for more.
 
@@ -26,5 +26,3 @@ or just browse the github pages.
 ```sh
 just build
 ```
-
-Ensure all urls are relative (i.e. start with `./``)
